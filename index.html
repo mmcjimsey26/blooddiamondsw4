@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLOOD DIAMONDS</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #101418;
+    color: #e8edf2;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 25px 12px;
+  }
+
+  main {
+    width: min(900px, 100%);
+  }
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    color: #9da9b5;
+    margin-bottom: 18px;
+  }
+
+  .economy {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .stat {
+    background: #1a2027;
+    border: 1px solid #303944;
+    border-radius: 8px;
+    padding: 9px;
+    text-align: center;
+  }
+
+  .stat small {
+    display: block;
+    color: #8995a1;
+    font-size: .7rem;
+    text-transform: uppercase;
+  }
+
+  .stat strong {
+    display: block;
+    font-size: 1.15rem;
+    margin-top: 2px;
+  }
+
+  #market {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    background: #171d23;
+    border-left: 3px solid #c5a34a;
+    color: #cbd3da;
+    font-size: .9rem;
+  }
+
+  .timer-wrap {
+    margin-bottom: 10px;
+  }
+
+  .timer-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: #aab5bf;
+    font-size: .85rem;
+  }
+
+  .timer-bar {
+    height: 8px;
+    background: #252c33;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  #timer-fill {
+    width: 100%;
+    height: 100%;
+    background: #6dc47a;
+    transition: width .2s linear;
+  }
+
+  #timer-fill.warning {
+    background: #d7a743;
+  }
+
+  #timer-fill.danger {
+    background: #c95757;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 2px;
+    background: #080b0e;
+    padding: 4px;
+    border-radius: 8px;
+    width: 100%;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 2px;
+    padding: 0;
+    background: #343d47;
+    color: #fff;
+    font-weight: bold;
+    font-size: clamp(.45rem, 1.5vw, .85rem);
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .cell:hover:not(.revealed) {
+    background: #45515d;
+  }
+
+  .cell.revealed {
+    background: #20262d;
+    cursor: default;
+  }
+
+  .cell.mine {
+    background: #9b3d3d;
+  }
+
+  .cell.diamond {
+    background: #655326;
+    color: #6ee7ff;
+    font-size: clamp(.6rem, 1.7vw, 1rem);
+  }
+
+  .n1 { color: #62a8ff; }
+  .n2 { color: #62d68b; }
+  .n3 { color: #ff7777; }
+  .n4 { color: #bd8cff; }
+  .n5 { color: #ffad5c; }
+  .n6 { color: #ff7fbd; }
+  .n7 { color: #b8b8b8; }
+  .n8 { color: #ffffff; }
+
+  .controls {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .controls button,
+  .controls input {
+    border: 1px solid #3c4651;
+    border-radius: 6px;
+    background: #252d35;
+    color: white;
+    padding: 9px 12px;
+  }
+
+  .controls input {
+    width: 100px;
+  }
+
+  .controls button {
+    cursor: pointer;
+  }
+
+  .controls button:hover {
+    background: #303a45;
+  }
+
+  #sell-all {
+    background: #3d3724;
+    border-color: #66582d;
+  }
+
+  #reset {
+    width: 100%;
+  }
+
+  #message {
+    text-align: center;
+    margin-top: 10px;
+    min-height: 24px;
+    color: #cbd3da;
+  }
+
+  @media (max-width: 600px) {
+    .economy {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat:last-child {
+      grid-column: span 2;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<main>
+    <h1>BLOOD DIAMONDS</h1>
+
+  <div class="subtitle">
+      The diamond market is a ruthless place. Can you extract resources and satisfy demand while avoiding explosives placed by the evil Lab-Grown Diamond Incorporated?
+  </div>
+
+  <div class="economy">
+    <div class="stat">
+      <small>Score</small>
+      <strong id="score">0</strong>
+    </div>
+
+    <div class="stat">
+      <small>Cash</small>
+      <strong>$<span id="cash">0</span></strong>
+    </div>
+
+    <div class="stat">
+      <small>Diamonds Held</small>
+      <strong id="held">0</strong>
+    </div>
+
+    <div class="stat">
+      <small>Demand</small>
+      <strong id="demand">100%</strong>
+    </div>
+
+    <div class="stat">
+      <small>Current Price</small>
+      <strong>$<span id="price">20</span></strong>
+    </div>
+  </div>
+
+  <div id="market">
+    The diamond supply is artificially limited. Selling diamonds satisfies demand,
+    causing the market price to fall.
+  </div>
+
+  <div class="timer-wrap">
+    <div class="timer-label">
+      <span>Time to find the next diamond</span>
+      <strong id="timer">60</strong>s
+    </div>
+
+    <div class="timer-bar">
+      <div id="timer-fill"></div>
+    </div>
+  </div>
+
+  <div id="message"></div>
+
+  <div class="controls">
+    <input
+      id="sell-amount"
+      type="number"
+      min="1"
+      value="1"
+      placeholder="Amount"
+    >
+
+    <button id="sell">Sell Diamonds</button>
+    <button id="sell-all">Sell All</button>
+    <button id="reset">Reset Economy</button>
+  </div>
+  <div id="board"></div>
+
+</main>
+
+<script>
+/*
+  SCARCITY SWEEPER
+
+  Economic concepts demonstrated:
+
+  1. Artificial scarcity:
+     Only a fixed number of diamonds exist.
+
+  2. Demand:
+     Every diamond sold reduces demand.
+
+  3. Falling price:
+     Lower demand means a lower market price.
+
+  4. Batch selling:
+     Every individual diamond in a sale is priced against
+     the demand remaining at the moment it enters the market.
+     Therefore, selling many diamonds at once produces a
+     lower total revenue than selling them gradually.
+
+  5. Time pressure:
+     The amount of time available to find each new diamond
+     decreases by 5 seconds after every discovery.
+*/
+
+const WIDTH = 20;
+const HEIGHT = 20;
+
+const MINES = 55;
+const DIAMONDS = 20;
+
+const STARTING_TIME = 60;
+const TIME_REDUCTION = 5;
+
+const STARTING_DEMAND = 100;
+const DEMAND_LOSS_PER_DIAMOND = 5;
+
+const BASE_PRICE = 20;
+
+let cells = [];
+
+let score = 0;
+let cash = 0;
+let found = 0;
+let heldDiamonds = 0;
+
+let demand = STARTING_DEMAND;
+
+let timeLimit = STARTING_TIME;
+let timeRemaining = STARTING_TIME;
+
+let gameOver = false;
+let timerInterval = null;
+
+const board = document.getElementById("board");
+
+const scoreEl = document.getElementById("score");
+const cashEl = document.getElementById("cash");
+const heldEl = document.getElementById("held");
+const demandEl = document.getElementById("demand");
+const priceEl = document.getElementById("price");
+
+const timerEl = document.getElementById("timer");
+const timerFillEl = document.getElementById("timer-fill");
+
+const marketEl = document.getElementById("market");
+const messageEl = document.getElementById("message");
+
+const sellAmountEl = document.getElementById("sell-amount");
+
+const sellButton = document.getElementById("sell");
+const sellAllButton = document.getElementById("sell-all");
+const resetButton = document.getElementById("reset");
+
+
+/* -----------------------------
+   GAME SETUP
+----------------------------- */
+
+function newGame() {
+  stopTimer();
+
+  board.innerHTML = "";
+  cells = [];
+
+  score = 0;
+  cash = 0;
+  found = 0;
+  heldDiamonds = 0;
+
+  demand = STARTING_DEMAND;
+
+  timeLimit = STARTING_TIME;
+  timeRemaining = STARTING_TIME;
+
+  gameOver = false;
+
+  messageEl.textContent = "";
+
+  for (let i = 0; i < WIDTH * HEIGHT; i++) {
+    cells.push({
+      mine: false,
+      diamond: false,
+      revealed: false,
+      adjacent: 0
+    });
+  }
+
+  placeRandom("mine", MINES);
+  placeRandom("diamond", DIAMONDS);
+
+  calculateNumbers();
+
+  buildBoard();
+  updateUI();
+
+  startTimer();
+}
+
+
+function placeRandom(type, amount) {
+  let placed = 0;
+
+  while (placed < amount) {
+    const index = Math.floor(Math.random() * cells.length);
+
+    if (
+      !cells[index].mine &&
+      !cells[index].diamond
+    ) {
+      cells[index][type] = true;
+      placed++;
+    }
+  }
+}
+
+
+function calculateNumbers() {
+  cells.forEach((cell, index) => {
+    if (cell.mine) return;
+
+    cell.adjacent = neighbors(index)
+      .filter(i => cells[i].mine)
+      .length;
+  });
+}
+
+
+function buildBoard() {
+  cells.forEach((cell, index) => {
+    const button = document.createElement("button");
+
+    button.className = "cell";
+    button.dataset.index = index;
+
+    button.onclick = () => reveal(index);
+
+    board.appendChild(button);
+  });
+}
+
+
+/* -----------------------------
+   BOARD LOGIC
+----------------------------- */
+
+function neighbors(index) {
+  const x = index % WIDTH;
+  const y = Math.floor(index / WIDTH);
+
+  const result = [];
+
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+
+      if (dx === 0 && dy === 0) {
+        continue;
+      }
+
+      const nx = x + dx;
+      const ny = y + dy;
+
+      if (
+        nx >= 0 &&
+        nx < WIDTH &&
+        ny >= 0 &&
+        ny < HEIGHT
+      ) {
+        result.push(ny * WIDTH + nx);
+      }
+    }
+  }
+
+  return result;
+}
+
+
+function reveal(index) {
+  if (gameOver) return;
+
+  const cell = cells[index];
+
+  if (cell.revealed) return;
+
+  cell.revealed = true;
+
+  const element = board.children[index];
+
+  element.classList.add("revealed");
+
+  /* Mine */
+
+  if (cell.mine) {
+
+    element.textContent = "💥";
+    element.classList.add("mine");
+
+    gameOver = true;
+
+    stopTimer();
+
+    revealAllMines();
+
+    messageEl.textContent =
+      "You hit an explosive. Pieces of your mining equipment lay strewn across the hills. You have no choice but to go bankrupt.";
+
+    return;
+  }
+
+
+  /* Diamond */
+
+  if (cell.diamond) {
+
+    element.textContent = "◆";
+    element.classList.add("diamond");
+
+    found++;
+    heldDiamonds++;
+
+    score += 10;
+
+    /*
+      Every diamond discovered makes the next deadline
+      five seconds shorter.
+    */
+    if (found < DIAMONDS) {
+      timeLimit = Math.max(5, STARTING_TIME - found * TIME_REDUCTION);
+
+      timeRemaining = timeLimit;
+
+      messageEl.textContent =
+        `Diamond found! The next deadline is now ${timeLimit} seconds. Keep up!`;
+    } else {
+      messageEl.textContent =
+        "You discovered the entire supply! You can now maximize profits!";
+      gameOver = true;
+      stopTimer();
+    }
+
+    updateUI();
+    return;
+  }
+
+
+  /* Number */
+
+  if (cell.adjacent > 0) {
+
+    element.textContent = cell.adjacent;
+
+    element.classList.add("n" + cell.adjacent);
+
+    score += 1;
+
+  } else {
+
+    /*
+      Flood-fill empty areas.
+      Do this without awarding extra diamond discoveries.
+    */
+
+    neighbors(index).forEach(n => {
+      if (
+        !cells[n].revealed &&
+        !cells[n].mine
+      ) {
+        reveal(n);
+      }
+    });
+  }
+
+  updateUI();
+}
+
+
+function revealAllMines() {
+  cells.forEach((cell, index) => {
+
+    if (!cell.mine) return;
+
+    cell.revealed = true;
+
+    const element = board.children[index];
+
+    element.textContent = "💥";
+    element.classList.add("revealed", "mine");
+  });
+}
+
+
+/* -----------------------------
+   ECONOMY
+----------------------------- */
+
+/*
+  Current market price.
+
+  Demand ranges from 0 to 100.
+
+  At 100% demand:
+      $20 / diamond
+
+  At 50% demand:
+      $10 / diamond
+
+  At 0% demand:
+      $1 / diamond
+
+  The small minimum value prevents the price from becoming
+  literally zero.
+*/
+
+function currentPrice() {
+  return Math.max(
+    1,
+    BASE_PRICE * (demand / STARTING_DEMAND)
+  );
+}
+
+
+/*
+  Selling works one diamond at a time.
+
+  This is intentional.
+
+  Suppose you have 10 diamonds:
+
+      Selling them individually over time
+      lets each one benefit from higher demand.
+
+      Selling all 10 immediately means each successive
+      diamond encounters lower demand.
+
+  That demonstrates how flooding a market can decrease
+  the value of the remaining inventory.
+*/
+
+function sellDiamonds(amount) {
+
+  if (gameOver && heldDiamonds <= 0) return;
+
+  amount = Math.floor(Number(amount));
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    messageEl.textContent =
+      "Enter a valid number of diamonds to sell.";
+    return;
+  }
+
+  amount = Math.min(amount, heldDiamonds);
+
+  if (amount <= 0) {
+    messageEl.textContent =
+      "You do not have any diamonds to sell.";
+    return;
+  }
+
+  let revenue = 0;
+
+  for (let i = 0; i < amount; i++) {
+
+    /*
+      Price is calculated BEFORE demand is reduced.
+
+      This means the first diamond in a transaction is
+      worth more than the last.
+    */
+
+    const price = currentPrice();
+
+    revenue += price;
+
+    /*
+      Selling satisfies demand.
+
+      In other words, the market is less hungry for diamonds
+      after more diamonds have entered circulation.
+    */
+
+    demand = Math.max(
+      0,
+      demand - DEMAND_LOSS_PER_DIAMOND
+    );
+  }
+
+  heldDiamonds -= amount;
+  cash += revenue;
+
+  messageEl.textContent =
+    `Sold ${amount} diamond${amount === 1 ? "" : "s"} for $${revenue.toFixed(2)}.`;
+
+  updateUI();
+}
+
+
+/* -----------------------------
+   TIMER
+----------------------------- */
+
+function startTimer() {
+
+  timerInterval = setInterval(() => {
+
+    if (gameOver) return;
+
+    timeRemaining -= 0.1;
+
+    if (timeRemaining <= 0) {
+
+      timeRemaining = 0;
+
+      gameOver = true;
+
+      stopTimer();
+
+      /*
+        Reveal diamonds and mines so the player can see
+        what they missed.
+      */
+
+      cells.forEach((cell, index) => {
+
+        if (!cell.revealed) return;
+
+        if (cell.diamond) {
+          board.children[index].textContent = "◆";
+          board.children[index].classList.add("diamond");
+        }
+
+      });
+
+      messageEl.textContent =
+        "You fell behind the market. Lab-grown diamonds now are ubiquitous, and your *honest business* has failed.";
+
+    }
+
+    updateTimer();
+  }, 100);
+}
+
+
+function stopTimer() {
+
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+
+function updateTimer() {
+
+  timerEl.textContent =
+    Math.ceil(timeRemaining);
+
+  const percentage =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        (timeRemaining / timeLimit) * 100
+      )
+    );
+
+  timerFillEl.style.width =
+    percentage + "%";
+
+  timerFillEl.classList.remove(
+    "warning",
+    "danger"
+  );
+
+  if (percentage <= 25) {
+    timerFillEl.classList.add("danger");
+  } else if (percentage <= 50) {
+    timerFillEl.classList.add("warning");
+  }
+}
+
+
+/* -----------------------------
+   UI
+----------------------------- */
+
+function updateUI() {
+
+  scoreEl.textContent =
+    score;
+
+  cashEl.textContent =
+    cash.toFixed(2);
+
+  heldEl.textContent =
+    heldDiamonds;
+
+  demandEl.textContent =
+    demand.toFixed(0) + "%";
+
+  priceEl.textContent =
+    currentPrice().toFixed(2);
+
+  marketEl.textContent =
+    `There are ${DIAMONDS - found} undiscovered diamonds left. ` +
+    `Demand is ${demand.toFixed(0)}%, making each diamond currently worth ` +
+    `$${currentPrice().toFixed(2)}.`;
+
+  updateTimer();
+}
+
+
+/* -----------------------------
+   CONTROLS
+----------------------------- */
+
+sellButton.onclick = () => {
+  sellDiamonds(sellAmountEl.value);
+};
+
+sellAllButton.onclick = () => {
+  sellDiamonds(heldDiamonds);
+};
+
+resetButton.onclick = newGame;
+
+
+/* Start */
+newGame();
+</script>
+
+</body>
+</html>
